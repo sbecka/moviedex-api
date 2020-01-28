@@ -1,15 +1,25 @@
+require('dotenv').config();
 const express = require('express');
 const morgan = require('morgan');
+const cors = require('cors');
 const MOVIEDEX = require('./moviedex.json');
 
 const app = express();
 
 app.use(morgan('dev'));
+app.use(cors());
 
+app.use(function validateBearerToken(req, res, next) {
+    const apiToken = process.env.API_TOKEN;
+    const authorToken = req.get('Authorization');
+
+    if (!authorToken || authorToken.split(' ')[1] !== apiToken) {
+        res.status(401).json({ error: 'Unauthorized request' })
+    };
+    
+    next();
+})
 // endpoint movie with query params: genre, country, avg_vote
-
-
-
 app.get('/movie', function handleGetMovie(req, res) {
     const { genre, country, avg_vote } = req.query;
     let movies = MOVIEDEX;
@@ -30,8 +40,9 @@ app.get('/movie', function handleGetMovie(req, res) {
 
         if (avg_vote > 10 || avg_vote < 0) {
             res.status(400).send('Average vote must be between 0 and 10.');
-        };        
-        console.log(vote);
+        };
+
+        //console.log(vote);
         
         movies = movies.filter(movie => 
             movie.avg_vote >= vote
