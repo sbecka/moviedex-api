@@ -7,7 +7,8 @@ const MOVIEDEX = require('./moviedex.json');
 
 const app = express();
 
-app.use(morgan('dev'));
+const morganSetting = process.env.NODE_ENV === 'production' ? 'tiny' : 'common';
+app.use(morgan(morganSetting));
 app.use(helmet());
 app.use(cors());
 
@@ -39,11 +40,11 @@ app.get('/movie', function handleGetMovie(req, res) {
 
     if (avg_vote) {
         let vote = Number(avg_vote);
-        //console.log(vote);
+        
         if (avg_vote > 10 || avg_vote < 0) {
             res.status(400).send('Average vote must be between 0 and 10.');
         };
-        //moviedex.avg_vote already number value
+        
         movies = movies.filter(movie => 
             movie.avg_vote >= vote
         );
@@ -53,8 +54,16 @@ app.get('/movie', function handleGetMovie(req, res) {
     
 });
 
-const PORT = 8000;
-
-app.listen(PORT, () => {
-    console.log(`Server is listening at http://localhost:${PORT}.`);
+app.use((error, req, res, next) => {
+    let response;
+    if (process.env.NODE_ENV === 'production') {
+        response = { error: { message: 'server error' }};
+    } else {
+        response = { error };
+    }
+    res.status(500).json(response);
 });
+
+const PORT = process.env.PORT || 8000;
+
+app.listen(PORT);
